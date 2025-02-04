@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="wwwroot\css\" />
+    <Content Include="Templates\login.html" />
+    <Content Include="Templates\register.html" />
+    <Content Include="Templates\success.html" />
   </ItemGroup>
 
 </Project>

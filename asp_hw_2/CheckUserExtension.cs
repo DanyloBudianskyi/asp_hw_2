@@ -8,7 +8,7 @@ namespace asp_hw_2
         {
             builder.Use(async (context, next) =>
             {
-                var pagesForAuthorized = new List<string>() { "/success", "/logout" };
+                var pagesForAuthorized = new List<string>() { "/success", "/logout", "/table" };
 
                 if (!pagesForAuthorized.Contains(context.Request.Path))
                 {
@@ -25,7 +25,7 @@ namespace asp_hw_2
                 }
                 catch (Exception ex)
                 {
-                    context.Response.Redirect("/login");
+                    context.Response.Redirect("/login?error=Authorize first");
                     return;
                 }
             });

@@ -12,26 +12,32 @@ namespace asp_hw_2
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddSession(options => { });
             builder.Services.AddDistributedMemoryCache();
+            builder.Services.AddSingleton<UserService>();
+            builder.Services.AddSingleton<HtmlService>();
+
             var app = builder.Build();
 
-            app.UseStaticFiles();
             app.UseSession();
             app.CheckUserSession();
-            
+            app.UseStaticFiles();
 
             app.MapGet("/", async context =>
             {
                 context.Response.Redirect($"/register");
             });
             app.MapGet("/login", async context =>
-            {
-                var service = context.RequestServices.GetService<IWebHostEnvironment>();
-                var wwwRootPath = service.WebRootPath;
+            {   
                 var error = context.Request.Query["error"];
-                var html = File.ReadAllText(Path.Combine(wwwRootPath, "login.html"));
-                html = html.Replace("{error}", string.IsNullOrWhiteSpace(error) ? "" : error);
+                var templateService = context.RequestServices.GetRequiredService<HtmlService>();
                 context.Response.ContentType = "text/html";
-                await context.Response.WriteAsync(html);
+                await context.Response.WriteAsync(
+                    templateService.RenderRegAuht("login",
+                    new Dictionary<string, string>
+                    {
+                        {"title", "Login page" },
+                        { "error", string.IsNullOrWhiteSpace(error) ? "" : error }
+                    })
+                    );
             });
             app.MapPost("/login", async context =>
             {
@@ -39,14 +45,14 @@ namespace asp_hw_2
                 var username = form["username"];
                 var password = form["password"];
 
-                var userService = new UserService();
+                var userService = context.RequestServices.GetRequiredService<UserService>();
                 var user = userService.FindByLogin(username);
-                if(user == null)
+                if (user == null)
                 {
                     context.Response.Redirect("/login?error=User not found");
                     return;
                 }
-                if(!userService.VerifyPassword(username, password))
+                if (!userService.VerifyPassword(username, password))
                 {
                     context.Response.Redirect("/login?error=Wrong password");
                     return;
@@ -56,13 +62,17 @@ namespace asp_hw_2
             });
             app.MapGet("/register", async context =>
             {
-                var service = context.RequestServices.GetService<IWebHostEnvironment>();
-                var wwwRootPath = service.WebRootPath;
                 var error = context.Request.Query["error"];
-                var html = File.ReadAllText(Path.Combine(wwwRootPath, "register.html"));
-                html = html.Replace("{error}", string.IsNullOrWhiteSpace(error) ? "" : error);
+                var templateService = context.RequestServices.GetRequiredService<HtmlService>();
                 context.Response.ContentType = "text/html";
-                await context.Response.WriteAsync(html);
+                await context.Response.WriteAsync(
+                    templateService.RenderRegAuht("register",
+                    new Dictionary<string, string>
+                    {
+                        {"title", "Registration form" },
+                        { "error", string.IsNullOrWhiteSpace(error) ? "" : error }
+                    })
+                    );
             });
             app.MapPost("/register", async context =>
             {
@@ -70,7 +80,7 @@ namespace asp_hw_2
                 var name = form["name"].ToString();
                 var username = form["username"].ToString();
                 var password = form["password"].ToString();
-                var userService = new UserService();
+                var userService = context.RequestServices.GetRequiredService<UserService>();
                 var user = userService.FindByLogin(username);
                 if (user != null)
                 {
@@ -95,22 +105,27 @@ namespace asp_hw_2
             });
             app.MapGet("/success", async context =>
             {
-                var user = context.Items["MyUser"] as User;
-                var service = context.RequestServices.GetService<IWebHostEnvironment>();
-                var wwwRootPath = service.WebRootPath;
-                var filePath = Path.Combine(wwwRootPath, "success.html");
-                var html = File.ReadAllText(filePath);
-
-                context.Response.ContentType = "text/html";
-                var replacements = new Dictionary<string, string>
-                {
-                    {"{name}" , user.Name},
-                    {"{username}" , user.Username},
-                };
-                html = HtmlService.ReadHtml(filePath, replacements);
-                await context.Response.WriteAsync(html);
+            var user = context.Items["MyUser"] as User;
+            var templateService = context.RequestServices.GetRequiredService<HtmlService>();
+            context.Response.ContentType = "text/html";
+            await context.Response.WriteAsync(
+                templateService.Render("success",
+                new Dictionary<string, string>{
+                    {"title", "Home" }
+                })
+                );
             });
-
+            app.MapGet("/table", async context =>
+            {
+                var templateService = context.RequestServices.GetRequiredService<HtmlService>();
+                context.Response.ContentType = "text/html";
+                await context.Response.WriteAsync(
+                    templateService.Render("table",
+                    new Dictionary<string, string>{
+                        {"title", "Knowledge" }
+                    })
+                    );
+            });
             app.Run();
         }
     }
